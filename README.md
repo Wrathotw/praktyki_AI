@@ -1,1 +1,1 @@
-# LIAT
+# praktyki_AI
