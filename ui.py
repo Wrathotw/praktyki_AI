@@ -2,21 +2,15 @@ import streamlit as st
 import random
 import time
 
+from chat import chain
 
 # Streamed response emulator
-def response_generator():
-    response = random.choice(
-        [
-            "Hi! How can i help you?",
-            "Hello! Is there anything I can help you with?",
-            "Do you need help?",
-            "Hi there! What can I do for you?"
-        ]
-    )
+def response_generator(joke_topic):
+    response = chain.invoke({"topic": joke_topic}).content
+
     for word in response.split():
         yield word + " "
-        time.sleep(0.10)
-
+        time.sleep(0.1)
 
 st.title("My first chat app")
 
@@ -30,15 +24,21 @@ for message in st.session_state.messages:
         st.markdown(message["content"])
 
 # Accept user input
-if prompt := st.chat_input("What is up?"):
+if prompt := st.chat_input("Enter a joke topic:"):
     # Add user message to chat history
     st.session_state.messages.append({"role": "user", "content": prompt})
     # Display user message in chat message container
     with st.chat_message("user"):
-        st.markdown(prompt)
+        st.markdown(prompt)   
 
-    # Display assistant response in chat message container
+    # Stream assistant response
     with st.chat_message("assistant"):
-        response = st.write_stream(response_generator())
-    # Add assistant response to chat history
-    st.session_state.messages.append({"role": "assistant", "content": response})
+        message_placeholder = st.empty()
+        full_response = ""
+        response_stream = response_generator(prompt)
+
+        for word in response_generator(prompt):
+            full_response += word
+            message_placeholder.markdown(full_response)
+
+    st.session_state.messages.append({"role": "assistant", "content": full_response})
