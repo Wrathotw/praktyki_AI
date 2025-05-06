@@ -2,7 +2,7 @@ import streamlit as st
 import random
 import time
 
-from chat import chain
+from ai import chain
 
 # Streamed response emulator
 def response_generator(joke_topic):
