@@ -4,14 +4,18 @@ import zipfile
 import tempfile
 
 from ai import chain
+from ai import sql_query
 
 # Streamed response emulator
-def response_generator(joke_topic):
-    response = chain.invoke({"topic": joke_topic}).content
+def response_generator(question):
+    response = chain.invoke({"question": question})
+    result = sql_query(response.content)
 
-    for word in response.split():
+    for word in str(result).split():
         yield word + " "
         time.sleep(0.1)
+
+    return result
 
 st.title("My first chat app")
 
@@ -31,7 +35,7 @@ for message in st.session_state.messages:
         st.markdown(message["content"])
 
 # Accept user input
-if prompt := st.chat_input("Enter a joke topic:"):
+if prompt := st.chat_input("What should the chatbot return?"):
     # Add user message to chat history
     st.session_state.messages.append({"role": "user", "content": prompt})
     # Display user message in chat message container
@@ -44,7 +48,7 @@ if prompt := st.chat_input("Enter a joke topic:"):
         full_response = ""
         response_stream = response_generator(prompt)
 
-        for word in response_generator(prompt):
+        for word in response_stream:
             full_response += word
             message_placeholder.markdown(full_response)
 
