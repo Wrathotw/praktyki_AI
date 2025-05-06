@@ -1,5 +1,7 @@
 import streamlit as st
 import time
+import zipfile
+import tempfile
 
 from ai import chain
 
@@ -12,6 +14,12 @@ def response_generator(joke_topic):
         time.sleep(0.1)
 
 st.title("My first chat app")
+
+uploaded_zip = st.file_uploader(
+    "Choose a ZIP file to work on",
+    accept_multiple_files=False,
+    type=['zip']
+)
 
 # Initialize chat history
 if "messages" not in st.session_state:
@@ -41,3 +49,8 @@ if prompt := st.chat_input("Enter a joke topic:"):
             message_placeholder.markdown(full_response)
 
     st.session_state.messages.append({"role": "assistant", "content": full_response})
+if uploaded_zip:
+    temp_dir = tempfile.gettempdir()
+    with zipfile.ZipFile(uploaded_zip, mode="r") as archive:
+        archive.printdir()
+        archive.extractall(path=f'{temp_dir}\zipdir')
