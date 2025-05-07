@@ -7,9 +7,9 @@ from ai import chain
 from ai import sql_query
 
 suggestions = [
-    "suggestion 1",
-    "suggestion 2",
-    "suggestion 3"
+    'How many entries contain "watsonx" in their name',
+    'Find entries thta contain "automation" in theit product name',
+    'How many entries have their peak date on 2024-10-16'
 ]
 
 if "messages" not in st.session_state:
