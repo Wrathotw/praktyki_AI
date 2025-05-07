@@ -23,7 +23,7 @@ if "input_text" not in st.session_state:
 
 def response_generator(question):
     response = chain.invoke({"question": question})
-    result = sql_query(response.content)
+    result = sql_query(response.content.replace('\\', ''))
 
     for word in str(result).split():
         yield word + " "
