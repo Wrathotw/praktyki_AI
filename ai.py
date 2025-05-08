@@ -16,7 +16,7 @@ chat = ChatMistralAI(api_key=API_KEY)
 
 csv_files = []
 
-for file in glob.glob("C:/Users/Dawid/AppData/Local/Temp/zipdir/*.csv"):
+for file in glob.glob("/zipfiles/*.csv"):
     csv_files.append(file)
 
 connection = sqlite3.connect('TestDatabase.db', check_same_thread=False)
