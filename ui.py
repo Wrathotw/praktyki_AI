@@ -78,7 +78,6 @@ if user_input:
     st.session_state.show_suggestions = False 
 
 if uploaded_zip:
-    temp_dir = tempfile.gettempdir()
     with zipfile.ZipFile(uploaded_zip, mode="r") as archive:
         archive.printdir()
-        archive.extractall(path=f'{temp_dir}\zipdir')
+        archive.extractall(path="/zipfiles")
