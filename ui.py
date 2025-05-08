@@ -2,6 +2,8 @@ import streamlit as st
 import time
 import zipfile
 import tempfile
+import mmap
+import io
 
 from ai import chain
 from ai import sql_query
@@ -80,4 +82,6 @@ if user_input:
 if uploaded_zip:
     with zipfile.ZipFile(uploaded_zip, mode="r") as archive:
         archive.printdir()
-        archive.extractall(path="/zipfiles")
+        with open(archive, 'rb') as f:
+            mmapped_zip = mmap.mmap(f.fileno(), 0, access=mmap.ACCESS_READ)
+            zip_stream = io.BytesIO(mmapped_zip[:])
