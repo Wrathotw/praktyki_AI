@@ -1,16 +1,14 @@
 import streamlit as st
 import time
 import zipfile
-import tempfile
-import mmap
-import io
+import pandas as pd
+from io import BytesIO
 
-from ai import chain
-from ai import sql_query
+from ai import load_dataframes_into_db, get_prompt_chain, sql_query
 
 suggestions = [
     'How many entries contain "watsonx" in their name',
-    'Find entries thta contain "automation" in theit product name',
+    'Find entries that contain "automation" in their product name',
     'How many entries have their peak date on 2024-10-16'
 ]
 
@@ -23,8 +21,25 @@ if "show_suggestions" not in st.session_state:
 if "input_text" not in st.session_state:
     st.session_state.input_text = ""
 
+st.title("DB chat app")
+
+uploaded_zip = st.file_uploader("Choose a ZIP file to work on", type=['zip'])
+
+if uploaded_zip:
+    with zipfile.ZipFile(uploaded_zip) as archive:
+        csv_dataframes = []
+        for file_name in archive.namelist():
+            if file_name.endswith(".csv"):
+                with archive.open(file_name) as f:
+                    df = pd.read_csv(f)
+                    csv_dataframes.append((file_name, df))
+
+        load_dataframes_into_db(csv_dataframes)
+        st.session_state.chain = get_prompt_chain()
+        st.success("ZIP loaded and tables created!")
+
 def response_generator(question):
-    response = chain.invoke({"question": question})
+    response = st.session_state.chain.invoke({"question": question})
     result = sql_query(response.content.replace('\\', ''))
 
     for word in str(result).split():
@@ -37,14 +52,6 @@ def use_suggestion(suggestion):
     st.session_state.input_text = suggestion
     st.session_state.trigger_send = True
     st.session_state.show_suggestions = False
-
-st.title("DB chat app")
-
-uploaded_zip = st.file_uploader(
-    "Choose a ZIP file to work on",
-    accept_multiple_files=False,
-    type=['zip']
-)
 
 for message in st.session_state.messages:
     with st.chat_message(message["role"]):
@@ -77,11 +84,4 @@ if user_input:
 
     st.session_state.messages.append({"role": "assistant", "content": full_response})
     st.session_state.input_text = ""
-    st.session_state.show_suggestions = False 
-
-if uploaded_zip:
-    with zipfile.ZipFile(uploaded_zip, mode="r") as archive:
-        archive.printdir()
-        with open(archive, 'rb') as f:
-            mmapped_zip = mmap.mmap(f.fileno(), 0, access=mmap.ACCESS_READ)
-            zip_stream = io.BytesIO(mmapped_zip[:])
+    st.session_state.show_suggestions = False
