@@ -2,10 +2,10 @@ import streamlit as st
 import time
 import zipfile
 import pandas as pd
-from io import BytesIO
+import httpx
 import hashlib
 
-from ai import load_dataframes_into_db, get_prompt_chain, sql_query
+from ai import load_dataframes_into_db, get_prompt_chain, get_formatting_prompt_chain, sql_query
 
 st.set_page_config(layout="wide")
 
@@ -41,7 +41,7 @@ if uploaded_zip:
         st.session_state.input_text = ""
         st.session_state.show_suggestions = True
         st.session_state.last_uploaded_hash = current_hash
-
+    
     with zipfile.ZipFile(uploaded_zip) as archive:
         csv_dataframes = []
         for file_name in archive.namelist():
@@ -55,14 +55,27 @@ if uploaded_zip:
         st.success("ZIP loaded and tables created!")
 
 def response_generator(question):
-    response = st.session_state.chain.invoke({"question": question})
-    result = sql_query(response.content.replace('\\', ''))
+    try:
+        response = st.session_state.chain.invoke({"question": question})
+        result = sql_query(response.content.replace('\\', ''))
+        time.sleep(0.3)
+        formatted_result = get_formatting_prompt_chain().invoke({"question":question, "result":str(result)}).content
+        
+        for word in str(formatted_result).split():
+            yield word + " "
+            time.sleep(0.1)
 
-    for word in str(result).split():
-        yield word + " "
-        time.sleep(0.1)
+        return formatted_result
 
-    return result
+    except httpx.HTTPStatusError as err:
+        if err.response.status_code == 429:
+            yield "The AI service is currently rate-limited (too many requests). Please wait a moment and try again."
+        else:
+            yield f"An error occurred while contacting the AI service: {str(err)}"
+
+    except Exception as e:
+        yield f"An unexpected error occurred: {str(err)}"
+
 
 def use_suggestion(suggestion):
     st.session_state.input_text = suggestion
