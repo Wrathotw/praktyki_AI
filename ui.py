@@ -3,8 +3,11 @@ import time
 import zipfile
 import pandas as pd
 from io import BytesIO
+import hashlib
 
 from ai import load_dataframes_into_db, get_prompt_chain, sql_query
+
+st.set_page_config(layout="wide")
 
 suggestions = [
     'How many entries contain "watsonx" in their name',
@@ -23,9 +26,22 @@ if "input_text" not in st.session_state:
 
 st.title("DB chat app")
 
+def get_file_hash(file):
+    file.seek(0)
+    content = file.read()
+    file.seek(0)
+    return hashlib.md5(content).hexdigest()
+
 uploaded_zip = st.file_uploader("Choose a ZIP file to work on", type=['zip'])
 
 if uploaded_zip:
+    current_hash = get_file_hash(uploaded_zip)
+    if st.session_state.get("last_uploaded_hash") != current_hash:
+        st.session_state.messages = []
+        st.session_state.input_text = ""
+        st.session_state.show_suggestions = True
+        st.session_state.last_uploaded_hash = current_hash
+
     with zipfile.ZipFile(uploaded_zip) as archive:
         csv_dataframes = []
         for file_name in archive.namelist():
