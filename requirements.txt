@@ -4,3 +4,4 @@ langchain-core
 langchain-mistralai
 streamlit
 xlrd
+supabase
