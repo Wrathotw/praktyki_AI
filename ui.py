@@ -4,10 +4,21 @@ import zipfile
 import pandas as pd
 import httpx
 import hashlib
+import os
+import uuid
 
 from ai import load_dataframes_into_db, get_prompt_chain, get_formatting_prompt_chain, sql_query
+from supabase import create_client
+from dotenv import find_dotenv, load_dotenv
 
 st.set_page_config(layout="wide")
+
+dotenv_path = find_dotenv()
+load_dotenv(dotenv_path)
+
+URL = os.getenv("database_url")
+KEY = os.getenv("database_api")
+supabase_client = create_client(URL, KEY)
 
 suggestions = [
     'How many entries contain "watsonx" in their name',
@@ -54,6 +65,17 @@ if uploaded_zip:
         st.session_state.chain = get_prompt_chain()
         st.success("ZIP loaded and tables created!")
 
+
+def log_chat_to_supabase(session_id, user_msg, assistant_msg):
+    supabase_client.table("chat_history").insert({
+        "session_id": session_id,
+        "user_message": user_msg,
+        "assistant_response": assistant_msg
+    }).execute()
+
+if "session_id" not in st.session_state:
+    st.session_state.session_id = str(uuid.uuid4())
+
 def response_generator(question):
     try:
         response = st.session_state.chain.invoke({"question": question})
@@ -65,6 +87,9 @@ def response_generator(question):
             yield word + " "
             time.sleep(0.1)
 
+        session_id = st.session_state.session_id
+        log_chat_to_supabase(session_id, question, formatted_result)
+
         return formatted_result
 
     except httpx.HTTPStatusError as err:
@@ -75,7 +100,6 @@ def response_generator(question):
 
     except Exception as e:
         yield f"An unexpected error occurred: {str(e)}"
-
 
 def use_suggestion(suggestion):
     st.session_state.input_text = suggestion
