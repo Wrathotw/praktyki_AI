@@ -74,7 +74,7 @@ def response_generator(question):
             yield f"An error occurred while contacting the AI service: {str(err)}"
 
     except Exception as e:
-        yield f"An unexpected error occurred: {str(err)}"
+        yield f"An unexpected error occurred: {str(e)}"
 
 
 def use_suggestion(suggestion):
