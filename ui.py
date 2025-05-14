@@ -79,25 +79,25 @@ def DB_chat_app():
             response = st.session_state.chain.invoke({"question": question})
             result = sql_query(response.content.replace('\\', ''))
             time.sleep(0.3)
-            formatted_result = get_formatting_prompt_chain().invoke({
-                "question": question,
-                "result": str(result)
-            }).content
-
+            formatted_result = get_formatting_prompt_chain().invoke({"question":question, "result":str(result)}).content
+            
             for word in str(formatted_result).split():
                 yield word + " "
                 time.sleep(0.1)
 
-            log_chat_to_supabase(st.session_state.session_id, question, formatted_result)
+            session_id = st.session_state.session_id
+            log_chat_to_supabase(session_id, question, formatted_result)
+
             return formatted_result
 
         except httpx.HTTPStatusError as err:
             if err.response.status_code == 429:
-                yield "Rate limit hit. Please wait and try again."
+                yield "The AI service is currently rate-limited (too many requests). Please wait a moment and try again."
             else:
-                yield f"HTTP error: {str(err)}"
+                yield f"An error occurred while contacting the AI service: {str(err)}"
+
         except Exception as e:
-            yield f"Unexpected error: {str(e)}"
+            yield f"An unexpected error occurred: {str(e)}"
 
     def use_suggestion(suggestion):
         st.session_state.input_text = suggestion
