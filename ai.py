@@ -75,7 +75,7 @@ def get_prompt_chain():
     Row No.	Publisher, Imported Part Numbers, Product Name, Cloud Pak or FlexPoint Bundle, Metric, Server Name, Processor, Processor Brand String, Computer, Computer Deleted, OS, IP Address, Product Release, Component, Path, Unconfirmed Product Instance, Computer Last Seen, Discovery Start, Discovery End, Exclusion Comment, Charged, Computer First Seen
     The things you are supposed to look out for are:
     1. If the same computer has both 'IBM MQ' and 'IBM MQ Advanced' products assigned, and they are not both explicitly assigned under the 'IBM MQ Advanced' component, then it is improperly assigned. Return 'improperly assigned'.
-    2. If the same computer has the product 'IBM MQ Advanced' but does not also have 'IBM MQ Advanced Message Security', then it is improperly assigned. Return 'improperly assigned'.
+    2. If the same computer has the product 'IBM MQ Advanced' but does not also have 'IBM MQ Advanced Message Security' (followed by a version number) assigned under component, then it is improperly assigned. Return 'improperly assigned'.
     3. If a computer has the product 'IBM MQ Advanced' but is missing one or both of these: 'IBM MQ Managed File Transfer Agent' or 'IBM MQ Managed File Transfer Service', then it is improperly assigned. Return 'improperly assigned'. Use DISTINCT because those products may be listed multiple times.
     Look out for them ONLY if asked to check the assignments of MQ components.
     
