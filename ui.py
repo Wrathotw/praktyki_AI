@@ -24,8 +24,8 @@ def DB_chat_app():
     st.title("DB Chat App")
 
     suggestions = [
-        'How many entries contain "watsonx" in their name',
-        'Find entries that contain "automation" in their product name',
+        'How many entries contain "watsonx" in their name?',
+        'Find entries that contain "automation" in their product name.',
         'Are the MQ components properly assigned?'
     ]
 
@@ -121,17 +121,22 @@ def DB_chat_app():
         st.session_state.trigger_send = False
 
     if user_input:
-        st.session_state.messages.append({"role": "user", "content": user_input})
-        with st.chat_message("user"):
-            st.markdown(user_input)
-
-        with st.chat_message("assistant"):
-            message_placeholder = st.empty()
-            full_response = ""
-            for word in response_generator(user_input):
-                full_response += word
+        if uploaded_zip:
+            st.session_state.messages.append({"role": "user", "content": user_input})
+            with st.chat_message("user"):
+                st.markdown(user_input)
+            with st.chat_message("assistant"):
+                message_placeholder = st.empty()
+                full_response = ""
+                for word in response_generator(user_input):
+                    full_response += word
+                    message_placeholder.markdown(full_response)
+        else:
+             with st.chat_message("assistant"):
+                message_placeholder = st.empty()
+                full_response = "You have to add zip pack for me to work on."
                 message_placeholder.markdown(full_response)
-
+                
         st.session_state.messages.append({"role": "assistant", "content": full_response})
         st.session_state.input_text = ""
         st.session_state.show_suggestions = False
