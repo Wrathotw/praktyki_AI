@@ -26,7 +26,7 @@ def DB_chat_app():
     suggestions = [
         'How many entries contain "watsonx" in their name',
         'Find entries that contain "automation" in their product name',
-        'How many entries have their peak date on 2024-10-16'
+        'Are the MQ components properly assigned?'
     ]
 
     if "messages" not in st.session_state:
