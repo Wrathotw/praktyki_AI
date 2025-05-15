@@ -71,7 +71,8 @@ def DB_chat_app():
             supabase_client.table("chat_history").insert({
                 "session_id": session_id,
                 "user_message": user_msg,
-                "assistant_response": assistant_msg
+                "assistant_response": assistant_msg,
+                "filename": uploaded_zip.name
             }).execute()
 
     def response_generator(question):
@@ -135,10 +136,11 @@ def DB_chat_app():
         st.session_state.input_text = ""
         st.session_state.show_suggestions = False
 
+
 def get_distinct_via_client():
-    response = supabase_client.table("chat_history").select("session_id").execute()
+    response = supabase_client.table("chat_history").select("session_id").order("created_at", desc=False).execute()
     values = [row["session_id"] for row in response.data]
-    return list(set(values))
+    return list(dict.fromkeys(values))
 
 session_pages = []
 
@@ -147,17 +149,23 @@ for i, session_id in enumerate(get_distinct_via_client(), start=1):
         def page():
             st.title(f"Chat History: {sid}")
             response = supabase_client.table("chat_history") \
-                .select("user_message", "assistant_response") \
+                .select("user_message", "assistant_response", "filename") \
                 .eq("session_id", sid) \
                 .execute()
+            if response.data:
+                filename = response.data[0].get("filename", "Unknown File")
+                st.header(f"File: {filename}")
+            else:
+                st.header("File: Not Found")
             for row in response.data:
-                st.markdown(f"**User**: {row['user_message']}")
-                st.markdown(f"**Assistant**: {row['assistant_response']}")
-                st.markdown("---")
+                with st.chat_message("user"):
+                    st.markdown(row["user_message"])
+                with st.chat_message("assistant"):
+                    st.markdown(row["assistant_response"])
         return page
     session_pages.append((f"Session {i}", make_page()))
 
-pages = [("DB Chat", DB_chat_app)] + session_pages
+pages = [("DB Chat App", DB_chat_app)] + session_pages
 
 page_names = [name for name, _ in pages]
 selection = st.sidebar.selectbox("Go to", page_names)
