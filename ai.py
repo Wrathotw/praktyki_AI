@@ -69,15 +69,21 @@ def get_prompt_chain():
     Do NOT stop at the first matching table. Ensure that the query includes every table where relevant columns exist.
     Make sure that the relevant column exists in every table, if it doesn't ignore that table.
     Make sure your SQL is syntactically correct. Always include a space between SQL keywords (e.g., SELECT COUNT(*) not SELECTCOUNT(*), WITH MQ_assignments not WITHMQ_assignments). 
+    Make sure your HAVING clause usage is correct.
+    Make sure you use COUNT() only on selected columns or '*'. Do not use it on a column you didn't select before. 
     Do not use backslashes or extra formatting. Output raw SQL only.
+    You must return only the SQL query text, without any explanation, comments, formatting, or additional words. 
+    Output the SQL as raw text only. Do not wrap the SQL in code blocks. 
+    Do not say anything else.
 
     If you are asked to check if the MQ compomnents are assigned properly you have to look for three things in the table containing these columns:
     Row No.	Publisher, Imported Part Numbers, Product Name, Cloud Pak or FlexPoint Bundle, Metric, Server Name, Processor, Processor Brand String, Computer, Computer Deleted, OS, IP Address, Product Release, Component, Path, Unconfirmed Product Instance, Computer Last Seen, Discovery Start, Discovery End, Exclusion Comment, Charged, Computer First Seen
     The things you are supposed to look out for are:
     1. If the same computer has both 'IBM MQ' and 'IBM MQ Advanced' products assigned, and they are not both explicitly assigned under the 'IBM MQ Advanced' component, then it is improperly assigned. Return 'improperly assigned'.
-    2. If the same computer has the product 'IBM MQ Advanced' but does not also have 'IBM MQ Advanced Message Security' (followed by a version number) assigned under component, then it is improperly assigned. Return 'improperly assigned'.
+    2. If the same computer has the product 'IBM MQ Advanced' but does not also have 'IBM MQ Advanced Message Security' (followed by a version number) assigned to a component, then it is improperly assigned. Return 'improperly assigned'.
     3. If a computer has the product 'IBM MQ Advanced' but is missing one or both of these: 'IBM MQ Managed File Transfer Agent' or 'IBM MQ Managed File Transfer Service', then it is improperly assigned. Return 'improperly assigned'. Use DISTINCT because those products may be listed multiple times.
-    Look out for them ONLY if asked to check the assignments of MQ components.
+    Always return 3 separate results (1 for each check). Do not group these conditions.
+    Only perform MQ component assignment checks if the user explicitly asks if MQ components are assigned correctly or properly, using phrases like 'properly assigned', 'correctly assigned', or 'MQ assignment check'. Do not perform MQ component assignment logic just because 'MQ' is mentioned. Only trigger this logic for questions directly asking about the correctness or validity of MQ assignments.
     
     Examples — CORRECT:
     User: Find all entries containing the word "toolkit"
@@ -124,7 +130,6 @@ def get_prompt_chain():
     Assistant:
     WITHMQ_assignments AS ( SELECT Computer, COUNT() as num_mq_products FROM ( SELECT Computer FROM Table2 WHERE Product_Name = 'IBM MQ' UNION ALL SELECT Computer FROM Table2 WHERE Product_Name = 'IBM MQ Advanced' UNION ALL SELECT Computer FROM Table2 WHERE Product_Name = 'IBM MQ Advanced Message Security' UNION ALL SELECT Computer FROM Table2 WHERE Product_Name = 'IBM MQ Managed File Transfer Agent' UNION ALL SELECT Computer FROM Table2 WHERE Product_Name = 'IBM MQ Managed File Transfer Service' ) AS MQ_products GROUP BY Computer HAVING COUNT() > 1 ), MQ_Advanced_assignments AS ( SELECT Computer, COUNT() as num_mq_advanced_products FROM ( SELECT Computer FROM Table2 WHERE Product_Name = 'IBM MQ Advanced' UNION ALL SELECT Computer FROM Table2 WHERE Product_Name = 'IBM MQ Advanced Message Security' ) AS MQ_advanced_products GROUP BY Computer HAVING COUNT() < 2 ), MQ_Managed_File_Transfer_assignments AS ( SELECT Computer, COUNT() as num_mq_managed_file_transfer_products FROM ( SELECT Computer FROM Table2 WHERE Product_Name = 'IBM MQ Advanced' UNION ALL SELECT Computer FROM Table2 WHERE Product_Name = 'IBM MQ Managed File Transfer Agent' UNION ALL SELECT Computer FROM Table2 WHERE Product_Name = 'IBM MQ Managed File Transfer Service' ) AS MQ_managed_file_transfer_products GROUP BY Computer HAVING COUNT() < 3 ) SELECT CASE WHEN COUNT() > 0 THEN 'improperly assigned' ELSE 'properly assigned' END as MQ_component_assignment_status FROM MQ_assignments UNION ALL SELECT CASE WHEN COUNT() > 0 THEN 'improperly assigned' ELSE 'properly assigned' END as MQ_Advanced_component_assignment_status FROM MQ_Advanced_assignments UNION ALL SELECT CASE WHEN COUNT(*) > 0 THEN 'improperly assigned' ELSE 'properly assigned' END as MQ_Managed_File_Transfer_component_assignment_status FROM MQ_Managed_File_Transfer_assignments;
     
-
     Do not return any of the incorrect behaviors shown above.
 
     database_schema: {database_schema}
@@ -144,6 +149,10 @@ def get_formatting_prompt_chain():
 
     If you receive the words 'improperly assigned' or 'properly assigned' instead of a query output, answer the user's question based on that information.
     Any instance of 'improperly assigned' means that your answer should mention the components being improperly assigned. If you only see 'properly assigned' then answer with that.
+    The first instance of 'improperly assigned' or 'properly assigned' refers to the situation when the same computer has both 'IBM MQ' and 'IBM MQ Advanced' products assigned, and they are not both explicitly assigned under the 'IBM MQ Advanced' component.
+    The second instance of 'improperly assigned' or 'properly assigned' refers to the situation when the same computer has the product 'IBM MQ Advanced' but does not also have 'IBM MQ Advanced Message Security' (followed by a version number) assigned to a component.
+    The third instance of 'improperly assigned' or 'properly assigned' refers to the situation when a computer has the product 'IBM MQ Advanced' but is missing one or both of these: 'IBM MQ Managed File Transfer Agent' or 'IBM MQ Managed File Transfer Service'.
+    Format the answer you give to the user based on these informations. Do not return the number of instances.
     """.strip()
 
     prompt = ChatPromptTemplate.from_messages([
