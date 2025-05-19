@@ -20,8 +20,8 @@ URL = os.getenv("database_url")
 KEY = os.getenv("database_api")
 supabase_client = create_client(URL, KEY)
 
-def DB_chat_app():
-    st.title("DB Chat App")
+def Audit_Snapshot_ChatBot():
+    st.title("Audit Snapshot ChatBot")
 
     suggestions = [
         'How many entries contain "watsonx" in their name?',
@@ -170,7 +170,7 @@ for i, session_id in enumerate(get_distinct_via_client(), start=1):
         return page
     session_pages.append((f"Session {i}", make_page()))
 
-pages = [("DB Chat App", DB_chat_app)] + session_pages
+pages = [("Audit Snapshot ChatBot", Audit_Snapshot_ChatBot)] + session_pages
 
 page_names = [name for name, _ in pages]
 selection = st.sidebar.selectbox("Go to", page_names)
